@@ -1,28 +1,27 @@
-//server.js
- 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
- 
+
 const app = express();
 const port = process.env.PORT || 5000;
- 
+
 app.use(cors());
 app.use(express.json());
- 
+
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log("Database Connected!"))
     .catch(err => console.error("Database connection error:", err));
- 
+
 const taskSchema = new mongoose.Schema({
     title: String,
     description: String,
     status: String
 });
- 
+
 const Task = mongoose.model('Task', taskSchema);
- 
+
 async function getTask(req, res, next) {
     try {
         const task = await Task.findById(req.params.id);
@@ -35,7 +34,7 @@ async function getTask(req, res, next) {
         return res.status(500).json({ message: err.message });
     }
 }
- 
+
 app.get('/tasks', async (req, res) => {
     try {
         const tasks = await Task.find();
@@ -44,7 +43,7 @@ app.get('/tasks', async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
- 
+
 app.post('/tasks', async (req, res) => {
     const task = new Task({
         title: req.body.title,
@@ -58,7 +57,7 @@ app.post('/tasks', async (req, res) => {
         res.status(400).json({ message: err.message });
     }
 });
- 
+
 app.put('/tasks/:id', getTask, async (req, res) => {
     if (req.body.title != null) {
         res.task.title = req.body.title;
@@ -76,7 +75,7 @@ app.put('/tasks/:id', getTask, async (req, res) => {
         res.status(400).json({ message: err.message });
     }
 });
- 
+
 app.delete('/tasks/:id', getTask, async (req, res) => {
     try {
         await res.task.deleteOne();
@@ -85,7 +84,15 @@ app.delete('/tasks/:id', getTask, async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
- 
+
+// Serve static files from the React frontend app
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+// Anything that doesn't match the above, send back index.html
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+});
+
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
